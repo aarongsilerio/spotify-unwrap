@@ -52,6 +52,34 @@ public class SpotifyDataService {
                 .collect(Collectors.toList());
     }
 
+    public List<String> getTopTracks(List<StreamingHistoryEntry> entries, int year, int limit) {
+        return entries.stream()
+                .filter(entry -> entry.getTs().getYear() == year)
+                .collect(Collectors.groupingBy(
+                        StreamingHistoryEntry::getSpotifyTrackUri,
+                        Collectors.summingLong(StreamingHistoryEntry::getMsPlayed)
+                ))
+                .entrySet().stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .limit(limit)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+    }
+
+    public List<String> getTopTracks(List<StreamingHistoryEntry> entries, int year, int month, int limit) {
+        return entries.stream()
+                .filter(entry -> entry.getTs().getYear() == year && entry.getTs().getMonthValue() == month)
+                .collect(Collectors.groupingBy(
+                        StreamingHistoryEntry::getSpotifyTrackUri,
+                        Collectors.summingLong(StreamingHistoryEntry::getMsPlayed)
+                ))
+                .entrySet().stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .limit(limit)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+    }
+
     public Map<String, Long> getTopArtists(List<StreamingHistoryEntry> entries, int limit) {
         Map<String, Long> artistPlayCounts = entries.stream()
                 .collect(Collectors.groupingBy(

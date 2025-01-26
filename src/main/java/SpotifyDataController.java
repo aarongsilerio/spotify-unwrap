@@ -3,15 +3,8 @@ import io.javalin.http.Context;
 import io.javalin.http.UploadedFile;
 import io.javalin.json.JsonMapper;
 
-import java.io.File;
 import java.lang.reflect.Type;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.time.DayOfWeek;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -39,21 +32,40 @@ public class SpotifyDataController {
         app.post("/analyze/top-songs", this::getTopSongs);
         app.post("/analyze/top-artists", this::getTopArtists);
         app.post("/analyze/top-albums", this::getTopAlbums);
+        app.post("/analyze/top-songs/year/{year}", this::getTopSongsByYear);
+        app.post("/analyze/top-songs/year/{year}/month/{month}", this::getTopSongsByYearAndMonth);
     }
 
     private void getTopSongs(Context ctx) {
-        handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS);
+        handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS, null, null);
+    }
+    private void getTopSongsByYear(Context ctx) {
+        try {
+            Integer year = Integer.parseInt(ctx.pathParam("year"));
+            handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS_BY_YEAR, year, null);
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid year format");
+        }
+    }
+
+    private void getTopSongsByYearAndMonth(Context ctx) {
+        try {
+            Integer year = Integer.parseInt(ctx.pathParam("year"));
+            Integer month = Integer.parseInt(ctx.pathParam("month"));
+            handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS_BY_YEAR_MONTH, year, month);
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid year or month format");
+        }
     }
 
     private void getTopArtists(Context ctx) {
-        handleAnalysisRequest(ctx, AnalysisType.TOP_ARTISTS);
+        handleAnalysisRequest(ctx, AnalysisType.TOP_ARTISTS, null, null);
     }
 
     private void getTopAlbums(Context ctx) {
-        handleAnalysisRequest(ctx, AnalysisType.TOP_ALBUMS);
+        handleAnalysisRequest(ctx, AnalysisType.TOP_ALBUMS, null, null);
     }
-
-    private void handleAnalysisRequest(Context ctx, AnalysisType type) {
+    private void handleAnalysisRequest(Context ctx, AnalysisType type, Integer year, Integer month) {
         UploadedFile file = ctx.uploadedFile("file");
         if (file == null) {
             ctx.status(400).result("No file uploaded");
@@ -66,14 +78,28 @@ public class SpotifyDataController {
 
             switch (type) {
                 case TOP_SONGS:
-                    List<String> topTrackUris = spotifyDataService.getTopTrackUris(entries, 10);
+                    List<String> topTrackUris = spotifyDataService.getTopTrackUris(entries, 15);
                     ctx.json(topTrackUris);
-                    return; // Return directly for top songs
+                    return;
+                case TOP_SONGS_BY_YEAR:
+                    if (year == null) {
+                        ctx.status(400).result("Year parameter is required");
+                        return;
+                    }
+                    result = spotifyDataService.getTopTracks(entries, year, 15);
+                    break;
+                case TOP_SONGS_BY_YEAR_MONTH:
+                    if (year == null || month == null) {
+                        ctx.status(400).result("Year and month parameters are required");
+                        return;
+                    }
+                    result = spotifyDataService.getTopTracks(entries, year, month, 15);
+                    break;
                 case TOP_ARTISTS:
-                    result = spotifyDataService.getTopArtists(entries, 10);
+                    result = spotifyDataService.getTopArtists(entries, 15);
                     break;
                 case TOP_ALBUMS:
-                    result = spotifyDataService.getTopAlbums(entries, 10);
+                    result = spotifyDataService.getTopAlbums(entries, 15);
                     break;
             }
 
@@ -88,8 +114,11 @@ public class SpotifyDataController {
             ctx.status(500).result("Error processing file");
         }
     }
+
     private enum AnalysisType {
         TOP_SONGS,
+        TOP_SONGS_BY_YEAR,
+        TOP_SONGS_BY_YEAR_MONTH,
         TOP_ARTISTS,
         TOP_ALBUMS
     }

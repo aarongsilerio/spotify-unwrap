@@ -88,7 +88,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 15px;
+            gap: 0px;
         }
 
         @media (max-width: 768px) {
@@ -111,6 +111,12 @@
                 margin-bottom: 10px;
             }
         }
+        .input-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -118,9 +124,23 @@
 
 <input type="file" id="csvFile" name="file" accept=".csv">
 
-<button id="topSongsBtn">Top Songs</button>
-<button id="topArtistsBtn">Top Artists</button>
-<button id="topAlbumsBtn">Top Albums</button>
+<div class="button-container">
+    <button id="topSongsBtn">Top Songs</button>
+    <button id="topArtistsBtn">Top Artists</button>
+    <button id="topAlbumsBtn">Top Albums</button>
+</div>
+<div class="input-container">
+    <label for="yearInput">Year:</label>
+    <input type="number" id="yearInput" name="year" min="2000" max="2099">
+</div>
+
+<div class="input-container">
+    <label for="monthInput">Month:</label>
+    <input type="number" id="monthInput" name="month" min="1" max="12">
+</div>
+
+<button id="topSongsYearBtn">Top Songs by Year</button>
+<button id="topSongsYearMonthBtn">Top Songs by Year/Month</button>
 
 <div id="results" style="display: none;">
     <div id="resultsContent"></div>
@@ -131,10 +151,12 @@
     const topSongsBtn = document.getElementById('topSongsBtn');
     const topArtistsBtn = document.getElementById('topArtistsBtn');
     const topAlbumsBtn = document.getElementById('topAlbumsBtn');
+    const topSongsYearBtn = document.getElementById('topSongsYearBtn');
+    const topSongsYearMonthBtn = document.getElementById('topSongsYearMonthBtn');
     const resultsDiv = document.getElementById('results');
     const resultsContent = document.getElementById('resultsContent');
 
-    async function fetchData(endpoint) {
+    async function fetchData(endpoint, year, month) {
         const file = fileInput.files[0];
         if (!file) {
             alert('Please select a CSV file.');
@@ -144,39 +166,23 @@
         const formData = new FormData();
         formData.append('file', file);
 
+        let url = endpoint;
+        if (year) {
+            url += `/year/${year}`;
+        }
+        if (month) {
+            url += `/month/${month}`;
+        }
+
         try {
-            const response = await fetch(endpoint, {
+            const response = await fetch(url, {
                 method: 'POST',
                 body: formData
             });
 
             if (response.ok) {
                 const data = await response.json();
-                resultsContent.innerHTML = ''; // Clear previous results
-
-                // Create iframes for top songs
-                if (endpoint === '/analyze/top-songs') {
-                    data.forEach(trackUri => {
-                        const trackId = trackUri.split(':')[2]; // Extract track ID
-                        const iframe = document.createElement('iframe');
-                        iframe.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`;
-                        iframe.frameBorder = '0';
-                        iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
-                        iframe.loading = "lazy"
-                        iframe.style.borderRadius = '12px'; // Add border-radius
-                        iframe.style.width = '100%';
-                        iframe.style.height = '100px';
-                        iframe.classList.add('iframe-container');
-                        resultsContent.appendChild(iframe);
-                    });
-                } else {
-                    // Display other results (top artists, albums) as JSON (for now)
-                    const pre = document.createElement('pre');
-                    pre.textContent = JSON.stringify(data, null, 2);
-                    resultsContent.appendChild(pre);
-                }
-
-                resultsDiv.style.display = 'block';
+                displayResults(data);
             } else {
                 const errorText = await response.text();
                 alert(`Error: ${response.status} - ${errorText}`);
@@ -187,9 +193,45 @@
         }
     }
 
+    function displayResults(data) {
+        resultsContent.innerHTML = ''; // Clear previous results
+
+        if (Array.isArray(data)) {
+            data.forEach(trackUri => {
+                const trackId = trackUri.split(':')[2]; // Extract track ID
+                const iframe = document.createElement('iframe');
+                iframe.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`;
+                iframe.frameBorder = '0';
+                iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
+                iframe.loading = "lazy"
+                iframe.style.borderRadius = '12px'; // Add border-radius
+                iframe.style.width = '100%';
+                iframe.style.height = '100px';
+                iframe.classList.add('iframe-container');
+                resultsContent.appendChild(iframe);
+            });
+        } else {
+            // Display other results as JSON
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify(data, null, 2);
+            resultsContent.appendChild(pre);
+        }
+
+        resultsDiv.style.display = 'block';
+    }
+
     topSongsBtn.addEventListener('click', () => fetchData('/analyze/top-songs'));
     topArtistsBtn.addEventListener('click', () => fetchData('/analyze/top-artists'));
     topAlbumsBtn.addEventListener('click', () => fetchData('/analyze/top-albums'));
+    topSongsYearBtn.addEventListener('click', () => {
+        const year = document.getElementById('yearInput').value;
+        fetchData('/analyze/top-songs', year);
+    });
+    topSongsYearMonthBtn.addEventListener('click', () => {
+        const year = document.getElementById('yearInput').value;
+        const month = document.getElementById('monthInput').value;
+        fetchData('/analyze/top-songs', year, month);
+    });
 </script>
 </body>
 </html>
