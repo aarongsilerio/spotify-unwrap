@@ -39,23 +39,17 @@ public class SpotifyDataService {
         }
         return entries;
     }
-
-    public Map<String, Long> getTopTracks(List<StreamingHistoryEntry> entries, int limit) {
-        Map<String, Long> trackPlayCounts = entries.stream()
+    public List<String> getTopTrackUris(List<StreamingHistoryEntry> entries, int limit) {
+        return entries.stream()
                 .collect(Collectors.groupingBy(
-                        entry -> entry.getTrackName() + " - " + entry.getArtistName(),
+                        StreamingHistoryEntry::getSpotifyTrackUri,
                         Collectors.summingLong(StreamingHistoryEntry::getMsPlayed)
-                ));
-
-        return trackPlayCounts.entrySet().stream()
+                ))
+                .entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .limit(limit)
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (e1, e2) -> e1,
-                        LinkedHashMap::new
-                ));
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
     }
 
     public Map<String, Long> getTopArtists(List<StreamingHistoryEntry> entries, int limit) {

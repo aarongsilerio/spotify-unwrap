@@ -36,10 +36,24 @@ public class SpotifyDataController {
     }
 
     private void setupEndpoints() {
-        app.post("/analyze", this::analyzeSpotifyData);
+        app.post("/analyze/top-songs", this::getTopSongs);
+        app.post("/analyze/top-artists", this::getTopArtists);
+        app.post("/analyze/top-albums", this::getTopAlbums);
     }
 
-    private void analyzeSpotifyData(Context ctx) {
+    private void getTopSongs(Context ctx) {
+        handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS);
+    }
+
+    private void getTopArtists(Context ctx) {
+        handleAnalysisRequest(ctx, AnalysisType.TOP_ARTISTS);
+    }
+
+    private void getTopAlbums(Context ctx) {
+        handleAnalysisRequest(ctx, AnalysisType.TOP_ALBUMS);
+    }
+
+    private void handleAnalysisRequest(Context ctx, AnalysisType type) {
         UploadedFile file = ctx.uploadedFile("file");
         if (file == null) {
             ctx.status(400).result("No file uploaded");
@@ -48,28 +62,36 @@ public class SpotifyDataController {
 
         try {
             List<StreamingHistoryEntry> entries = spotifyDataService.parseCsv(file.content());
+            Object result = null;
 
-            // Calculate features
-            Map<String, Long> topTracks = spotifyDataService.getTopTracks(entries, 10);
-            Map<String, Long> topArtists = spotifyDataService.getTopArtists(entries, 10);
-            Map<String, Long> topAlbums = spotifyDataService.getTopAlbums(entries, 10);
-            long totalListeningTime = spotifyDataService.getTotalListeningTime(entries);
-            Map<DayOfWeek, Long> mostListenedToDays = spotifyDataService.getMostListenedToDays(entries);
+            switch (type) {
+                case TOP_SONGS:
+                    List<String> topTrackUris = spotifyDataService.getTopTrackUris(entries, 10);
+                    ctx.json(topTrackUris);
+                    return; // Return directly for top songs
+                case TOP_ARTISTS:
+                    result = spotifyDataService.getTopArtists(entries, 10);
+                    break;
+                case TOP_ALBUMS:
+                    result = spotifyDataService.getTopAlbums(entries, 10);
+                    break;
+            }
 
-            // Build the response
-            Map<String, Object> response = new HashMap<>();
-            response.put("topTracks", topTracks);
-            response.put("topArtists", topArtists);
-            response.put("topAlbums", topAlbums);
-            response.put("totalListeningTime", totalListeningTime);
-            response.put("mostListenedToDays", mostListenedToDays);
-
-            ctx.json(response);
+            if (result != null) {
+                ctx.json(result);
+            } else {
+                ctx.status(500).result("Error processing request");
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
             ctx.status(500).result("Error processing file");
         }
+    }
+    private enum AnalysisType {
+        TOP_SONGS,
+        TOP_ARTISTS,
+        TOP_ALBUMS
     }
 
     private JsonMapper createGsonMapper() {
