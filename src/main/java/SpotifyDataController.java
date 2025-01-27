@@ -3,11 +3,14 @@ import io.javalin.http.Context;
 import io.javalin.http.UploadedFile;
 import io.javalin.json.JsonMapper;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
 import org.jetbrains.annotations.NotNull;
 
 public class SpotifyDataController {
@@ -34,15 +37,16 @@ public class SpotifyDataController {
         app.post("/analyze/top-albums", this::getTopAlbums);
         app.post("/analyze/top-songs/year/{year}", this::getTopSongsByYear);
         app.post("/analyze/top-songs/year/{year}/month/{month}", this::getTopSongsByYearAndMonth);
+        app.post("/analyze/played-songs/date/{date}", this::getPlayedSongs);
     }
 
     private void getTopSongs(Context ctx) {
-        handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS, null, null);
+        handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS, null, null, null);
     }
     private void getTopSongsByYear(Context ctx) {
         try {
             Integer year = Integer.parseInt(ctx.pathParam("year"));
-            handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS_BY_YEAR, year, null);
+            handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS_BY_YEAR, year, null, null);
         } catch (NumberFormatException e) {
             ctx.status(400).result("Invalid year format");
         }
@@ -52,20 +56,29 @@ public class SpotifyDataController {
         try {
             Integer year = Integer.parseInt(ctx.pathParam("year"));
             Integer month = Integer.parseInt(ctx.pathParam("month"));
-            handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS_BY_YEAR_MONTH, year, month);
+            handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS_BY_YEAR_MONTH, year, month, null);
         } catch (NumberFormatException e) {
             ctx.status(400).result("Invalid year or month format");
         }
     }
 
     private void getTopArtists(Context ctx) {
-        handleAnalysisRequest(ctx, AnalysisType.TOP_ARTISTS, null, null);
+        handleAnalysisRequest(ctx, AnalysisType.TOP_ARTISTS, null, null, null);
     }
 
     private void getTopAlbums(Context ctx) {
-        handleAnalysisRequest(ctx, AnalysisType.TOP_ALBUMS, null, null);
+        handleAnalysisRequest(ctx, AnalysisType.TOP_ALBUMS, null, null, null);
     }
-    private void handleAnalysisRequest(Context ctx, AnalysisType type, Integer year, Integer month) {
+
+    private void getPlayedSongs(Context ctx) {
+        try {
+            String date =  ctx.pathParam("date");
+            handleAnalysisRequest(ctx, AnalysisType.PLAYED_SONGS_DATE, null, null, date);
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid year format");
+        }
+    }
+    private void handleAnalysisRequest(Context ctx, AnalysisType type, Integer year, Integer month, String date) {
         UploadedFile file = ctx.uploadedFile("file");
         if (file == null) {
             ctx.status(400).result("No file uploaded");
@@ -101,6 +114,9 @@ public class SpotifyDataController {
                 case TOP_ALBUMS:
                     result = spotifyDataService.getTopAlbums(entries, 15);
                     break;
+                case PLAYED_SONGS_DATE:
+                    result = spotifyDataService.getPlayedSongsByDate(entries, date, 15);
+                    break;
             }
 
             if (result != null) {
@@ -120,11 +136,16 @@ public class SpotifyDataController {
         TOP_SONGS_BY_YEAR,
         TOP_SONGS_BY_YEAR_MONTH,
         TOP_ARTISTS,
-        TOP_ALBUMS
+        TOP_ALBUMS,
+        PLAYED_SONGS_DATE
     }
 
+
     private JsonMapper createGsonMapper() {
-        Gson gson = new GsonBuilder().create();
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeTypeAdapter())
+                .create();
+
         return new JsonMapper() {
             @Override
             public <T> T fromJsonString(@NotNull String json, @NotNull Type targetType) {

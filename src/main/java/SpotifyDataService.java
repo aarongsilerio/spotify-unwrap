@@ -7,6 +7,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -116,6 +118,15 @@ public class SpotifyDataService {
                         (e1, e2) -> e1,
                         LinkedHashMap::new
                 ));
+    }
+
+    public List<String> getPlayedSongsByDate(List<StreamingHistoryEntry> entries, String date, int limit) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate localDate = LocalDate.parse(date, formatter);
+
+        return entries.stream()
+                .filter(entry -> entry.getTs().toLocalDate().isEqual(localDate))
+                .map(StreamingHistoryEntry::getSpotifyTrackUri).distinct().collect(Collectors.toList());
     }
 
     public long getTotalListeningTime(List<StreamingHistoryEntry> entries) {

@@ -4,120 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotify Unwrap</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f7f7f7;
-            font-family: 'Playfair Display', sans-serif;
-        }
-
-        h1 {
-            margin: 20px 0;
-            color: #000000;
-        }
-
-        /* Basic Input File Styling */
-        input[type="file"] {
-            margin: 10px 0;
-        }
-
-        /* Button Container Styles */
-        .button-container {
-            display: flex;
-            justify-content: space-around;
-            width: 95%;
-            max-width: 800px;
-            margin: 10px 0;
-        }
-
-        .button-container button {
-            flex: 1;
-            margin: 0 5px;
-            background-color: #111111;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            font-size: 16px;
-            max-width: 33%;
-        }
-
-        .button-container button:hover {
-            background-color: #222222;
-        }
-
-        #results {
-            border: 1px solid #ccc;
-            padding: 20px;
-            border-radius: 12px;
-            background-color: #1f1f1f;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 800px;
-            margin-top: 20px;
-            overflow-y: auto; /* Enable vertical scrolling */
-            max-height: 500px; /* Set a maximum height for the container */
-        }
-
-        #resultsContent pre {
-            color: white;
-        }
-
-        .iframe-container {
-            width: 100%;
-            margin-bottom: 15px;
-        }
-
-        .iframe-container iframe {
-            display: block;
-            width: 100%;
-            height: 100px;
-            margin: 0 auto;
-            border: none;
-            border-radius: 12px;
-        }
-
-        #resultsContent {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0px;
-        }
-
-        @media (max-width: 768px) {
-            #results {
-                width: 98%;
-                padding: 10px;
-            }
-
-            .iframe-container iframe {
-                height: 85px;
-            }
-
-            .button-container {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .button-container button {
-                width: 80%;
-                margin-bottom: 10px;
-            }
-        }
-        .input-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
 </head>
 <body>
 <h1>Spotify Unwrap</h1>
@@ -128,6 +16,7 @@
     <button id="topSongsBtn">Top Songs</button>
     <button id="topArtistsBtn">Top Artists</button>
     <button id="topAlbumsBtn">Top Albums</button>
+    <button id="playedSongsBtn">Check Played Songs</button>
 </div>
 <div class="input-container">
     <label for="yearInput">Year:</label>
@@ -142,96 +31,13 @@
 <button id="topSongsYearBtn">Top Songs by Year</button>
 <button id="topSongsYearMonthBtn">Top Songs by Year/Month</button>
 
+<div class="input-container">
+    <label for="dateInput">Select Date:</label>
+    <input type="date" id="dateInput" name="date">
+</div>
+
 <div id="results" style="display: none;">
     <div id="resultsContent"></div>
 </div>
-
-<script>
-    const fileInput = document.getElementById('csvFile');
-    const topSongsBtn = document.getElementById('topSongsBtn');
-    const topArtistsBtn = document.getElementById('topArtistsBtn');
-    const topAlbumsBtn = document.getElementById('topAlbumsBtn');
-    const topSongsYearBtn = document.getElementById('topSongsYearBtn');
-    const topSongsYearMonthBtn = document.getElementById('topSongsYearMonthBtn');
-    const resultsDiv = document.getElementById('results');
-    const resultsContent = document.getElementById('resultsContent');
-
-    async function fetchData(endpoint, year, month) {
-        const file = fileInput.files[0];
-        if (!file) {
-            alert('Please select a CSV file.');
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        let url = endpoint;
-        if (year) {
-            url += `/year/${year}`;
-        }
-        if (month) {
-            url += `/month/${month}`;
-        }
-
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                displayResults(data);
-            } else {
-                const errorText = await response.text();
-                alert(`Error: ${response.status} - ${errorText}`);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('An error occurred while processing the request.');
-        }
-    }
-
-    function displayResults(data) {
-        resultsContent.innerHTML = ''; // Clear previous results
-
-        if (Array.isArray(data)) {
-            data.forEach(trackUri => {
-                const trackId = trackUri.split(':')[2]; // Extract track ID
-                const iframe = document.createElement('iframe');
-                iframe.src = `https://open.spotify.com/embed/track/${trackId}?utm_source=generator&theme=0`;
-                iframe.frameBorder = '0';
-                iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
-                iframe.loading = "lazy"
-                iframe.style.borderRadius = '12px'; // Add border-radius
-                iframe.style.width = '100%';
-                iframe.style.height = '100px';
-                iframe.classList.add('iframe-container');
-                resultsContent.appendChild(iframe);
-            });
-        } else {
-            // Display other results as JSON
-            const pre = document.createElement('pre');
-            pre.textContent = JSON.stringify(data, null, 2);
-            resultsContent.appendChild(pre);
-        }
-
-        resultsDiv.style.display = 'block';
-    }
-
-    topSongsBtn.addEventListener('click', () => fetchData('/analyze/top-songs'));
-    topArtistsBtn.addEventListener('click', () => fetchData('/analyze/top-artists'));
-    topAlbumsBtn.addEventListener('click', () => fetchData('/analyze/top-albums'));
-    topSongsYearBtn.addEventListener('click', () => {
-        const year = document.getElementById('yearInput').value;
-        fetchData('/analyze/top-songs', year);
-    });
-    topSongsYearMonthBtn.addEventListener('click', () => {
-        const year = document.getElementById('yearInput').value;
-        const month = document.getElementById('monthInput').value;
-        fetchData('/analyze/top-songs', year, month);
-    });
-</script>
 </body>
 </html>
