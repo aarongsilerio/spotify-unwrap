@@ -18,10 +18,12 @@ public class SpotifyDataService {
 
     public List<StreamingHistoryEntry> parseCsv(InputStream inputStream) throws IOException {
         Reader reader = new InputStreamReader(inputStream);
-        CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT
-                .withFirstRecordAsHeader()
-                .withIgnoreHeaderCase()
-                .withTrim());
+        CSVParser csvParser = CSVParser.parse(reader, CSVFormat.DEFAULT.builder()
+                .setHeader()
+                .setSkipHeaderRecord(true)
+                .setIgnoreHeaderCase(true)
+                .setTrim(true)
+                .build());
 
         List<StreamingHistoryEntry> entries = new ArrayList<>();
         for (CSVRecord record : csvParser) {
