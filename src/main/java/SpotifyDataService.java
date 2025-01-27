@@ -39,7 +39,7 @@ public class SpotifyDataService {
         }
         return entries;
     }
-    public List<String> getTopTrackUris(List<StreamingHistoryEntry> entries, int limit) {
+    public List<String> getTopTracks(List<StreamingHistoryEntry> entries, int limit) {
         return entries.stream()
                 .collect(Collectors.groupingBy(
                         StreamingHistoryEntry::getSpotifyTrackUri,

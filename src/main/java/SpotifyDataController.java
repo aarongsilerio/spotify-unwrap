@@ -78,7 +78,7 @@ public class SpotifyDataController {
 
             switch (type) {
                 case TOP_SONGS:
-                    List<String> topTrackUris = spotifyDataService.getTopTrackUris(entries, 15);
+                    List<String> topTrackUris = spotifyDataService.getTopTracks(entries, 15);
                     ctx.json(topTrackUris);
                     return;
                 case TOP_SONGS_BY_YEAR:
