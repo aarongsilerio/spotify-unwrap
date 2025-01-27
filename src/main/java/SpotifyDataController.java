@@ -11,6 +11,7 @@ import java.util.List;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
+import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.jetbrains.annotations.NotNull;
 
 public class SpotifyDataController {
@@ -26,7 +27,12 @@ public class SpotifyDataController {
                         staticFiles.location = io.javalin.http.staticfiles.Location.CLASSPATH;
                     });
                     config.jsonMapper(createGsonMapper());
+                    // Add CORS configuration:
+                    config.bundledPlugins.enableCors(cors -> {
+                        cors.addRule(CorsPluginConfig.CorsRule::anyHost);
+                    });
                 })
+
                 .start(7070);
         setupEndpoints();
     }
