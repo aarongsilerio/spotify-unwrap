@@ -18,8 +18,9 @@ public class SpotifyDataController {
 
     private final SpotifyDataService spotifyDataService;
     private final Javalin app;
-
+    SpotifyAPIService api;
     public SpotifyDataController(SpotifyDataService spotifyDataService) {
+        this.api = new SpotifyAPIService("07747c1af7e84fad9f7f388f0af8d068", "c614891da8834905b108304928a4525c");
         this.spotifyDataService = spotifyDataService;
         this.app = Javalin.create(config -> {
                     config.staticFiles.add(staticFiles -> {
@@ -115,10 +116,10 @@ public class SpotifyDataController {
                     result = spotifyDataService.getTopTracks(entries, year, month, 15);
                     break;
                 case TOP_ARTISTS:
-                    result = spotifyDataService.getTopArtists(entries, 15);
+                    result = spotifyDataService.getTopArtists(entries, 15, api);
                     break;
                 case TOP_ALBUMS:
-                    result = spotifyDataService.getTopAlbums(entries, 15);
+                    result = spotifyDataService.getTopAlbums(entries, 15, api);
                     break;
                 case PLAYED_SONGS_DATE:
                     result = spotifyDataService.getPlayedSongsByDate(entries, date, 15);

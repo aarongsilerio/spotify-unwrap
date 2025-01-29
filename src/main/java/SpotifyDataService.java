@@ -83,42 +83,37 @@ public class SpotifyDataService {
                 .collect(Collectors.toList());
     }
 
-    public Map<String, Long> getTopArtists(List<StreamingHistoryEntry> entries, int limit) {
+    public List<String> getTopArtists(List<StreamingHistoryEntry> entries, int limit, SpotifyAPIService api) {
         Map<String, Long> artistPlayCounts = entries.stream()
                 .collect(Collectors.groupingBy(
                         StreamingHistoryEntry::getArtistName,
                         Collectors.summingLong(StreamingHistoryEntry::getMsPlayed)
                 ));
 
-        return artistPlayCounts.entrySet().stream()
+        List<String> topArtists = artistPlayCounts.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .limit(limit)
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (e1, e2) -> e1,
-                        LinkedHashMap::new
-                ));
+                .map(Map.Entry::getKey)
+                .toList();
+
+        System.out.println(topArtists);
+
+        return api.getArtistIds(topArtists);
     }
 
-    public List<String> getTopAlbums(List<StreamingHistoryEntry> entries, int limit) {
-        SpotifyAlbumService albumService = new SpotifyAlbumService("07747c1af7e84fad9f7f388f0af8d068", "c614891da8834905b108304928a4525c");
-
+    public List<String> getTopAlbums(List<StreamingHistoryEntry> entries, int limit, SpotifyAPIService api) {
         Map<String, Long> albumPlayCounts = entries.stream()
                 .collect(Collectors.groupingBy(
                         entry -> entry.getAlbumName() + " - " + entry.getArtistName(),
                         Collectors.summingLong(StreamingHistoryEntry::getMsPlayed)
                 ));
 
-        System.out.println(albumPlayCounts);
-
-
         List<Map.Entry<String, Long>> sortedAlbums = albumPlayCounts.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .limit(limit)
                 .collect(Collectors.toList());
 
-        return albumService.getAlbumUris(sortedAlbums);
+        return api.getAlbumUris(sortedAlbums);
 
     }
 

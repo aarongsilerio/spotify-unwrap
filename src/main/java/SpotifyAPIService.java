@@ -1,8 +1,10 @@
 import se.michaelthelin.spotify.SpotifyApi;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 import se.michaelthelin.spotify.model_objects.specification.AlbumSimplified;
+import se.michaelthelin.spotify.model_objects.specification.Artist;
 import se.michaelthelin.spotify.model_objects.specification.Paging;
 import se.michaelthelin.spotify.requests.data.search.simplified.SearchAlbumsRequest;
+import se.michaelthelin.spotify.requests.data.search.simplified.SearchArtistsRequest;
 import org.apache.hc.core5.http.ParseException;
 import se.michaelthelin.spotify.requests.authorization.client_credentials.ClientCredentialsRequest;
 import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
@@ -12,11 +14,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class SpotifyAlbumService {
+public class SpotifyAPIService {
 
     private final SpotifyApi spotifyApi;
 
-    public SpotifyAlbumService(String clientId, String clientSecret) {
+    public SpotifyAPIService(String clientId, String clientSecret) {
         spotifyApi = new SpotifyApi.Builder()
                 .setClientId(clientId)
                 .setClientSecret(clientSecret)
@@ -69,6 +71,37 @@ public class SpotifyAlbumService {
             }
         } catch (IOException | SpotifyWebApiException | ParseException e) {
             System.out.println("Error searching for album: " + e.getMessage());
+            return null;
+        }
+    }
+
+    public List<String> getArtistIds(List<String> artistNames) {
+        List<String> artistIds = new ArrayList<>();
+        for (String artistName : artistNames) {
+            String artistId = searchArtistId(artistName);
+            if (artistId != null) {
+                artistIds.add(artistId);
+            }
+        }
+        return artistIds;
+    }
+
+    private String searchArtistId(String artistName) {
+        SearchArtistsRequest searchArtistsRequest = spotifyApi.searchArtists(artistName)
+                .limit(1)
+                .build();
+
+        try {
+            final Paging<Artist> artistPaging = searchArtistsRequest.execute();
+
+            if (artistPaging.getTotal() > 0) {
+                return artistPaging.getItems()[0].getId();
+            } else {
+                System.out.println("Artist not found: " + artistName);
+                return null;
+            }
+        } catch (IOException | SpotifyWebApiException | ParseException e) {
+            System.out.println("Error searching for artist: " + e.getMessage());
             return null;
         }
     }
