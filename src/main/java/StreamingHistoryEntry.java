@@ -2,7 +2,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.ZoneOffset;
 
-record StreamingHistoryEntry(LocalDateTime ts,
+public record StreamingHistoryEntry(LocalDateTime ts,
                                     long minutesPlayed,
                                     String trackName, String artistName, String albumName,
                                     String spotifyTrackUri, String reasonStart, String reasonEnd) {

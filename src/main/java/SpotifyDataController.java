@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -15,10 +16,13 @@ import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.jetbrains.annotations.NotNull;
 
 public class SpotifyDataController {
+
+    private final SpotifyDataService spotifyDataService;
     private final Javalin app;
     SpotifyAPIService api;
-    public SpotifyDataController() {
+    public SpotifyDataController(SpotifyDataService spotifyDataService) {
         this.api = new SpotifyAPIService("07747c1af7e84fad9f7f388f0af8d068", "c614891da8834905b108304928a4525c");
+        this.spotifyDataService = spotifyDataService;
         this.app = Javalin.create(config -> {
                     config.staticFiles.add(staticFiles -> {
                         staticFiles.directory = "/public";
@@ -45,12 +49,12 @@ public class SpotifyDataController {
     }
 
     private void getTopSongs(Context ctx) {
-        handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS, null, null, null);
+        handleAnalysisRequest(ctx, new TopSongsAnalysis(), null, null, null);
     }
     private void getTopSongsByYear(Context ctx) {
         try {
             Integer year = Integer.parseInt(ctx.pathParam("year"));
-            handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS_BY_YEAR, year, null, null);
+            handleAnalysisRequest(ctx, new TopSongsAnalysis(year), year, null, null);
         } catch (NumberFormatException e) {
             ctx.status(400).result("Invalid year format");
         }
@@ -60,29 +64,29 @@ public class SpotifyDataController {
         try {
             Integer year = Integer.parseInt(ctx.pathParam("year"));
             Integer month = Integer.parseInt(ctx.pathParam("month"));
-            handleAnalysisRequest(ctx, AnalysisType.TOP_SONGS_BY_YEAR_MONTH, year, month, null);
+            handleAnalysisRequest(ctx, new TopSongsAnalysis(year, month), year, month, null);
         } catch (NumberFormatException e) {
             ctx.status(400).result("Invalid year or month format");
         }
     }
 
     private void getTopArtists(Context ctx) {
-        handleAnalysisRequest(ctx, AnalysisType.TOP_ARTISTS, null, null, null);
+        handleAnalysisRequest(ctx, new TopArtistsAnalysis(), null, null, null);
     }
 
     private void getTopAlbums(Context ctx) {
-        handleAnalysisRequest(ctx, AnalysisType.TOP_ALBUMS, null, null, null);
+        handleAnalysisRequest(ctx, new TopAlbumsAnalysis(), null, null, null);
     }
 
     private void getPlayedSongs(Context ctx) {
         try {
             String date =  ctx.pathParam("date");
-            handleAnalysisRequest(ctx, AnalysisType.PLAYED_SONGS_DATE, null, null, date);
+            handleAnalysisRequest(ctx, new PlayedSongsByDayAnalysis(date), null, null, date);
         } catch (NumberFormatException e) {
             ctx.status(400).result("Invalid year format");
         }
     }
-    private void handleAnalysisRequest(Context ctx, AnalysisType type, Integer year, Integer month, String date) {
+    private void handleAnalysisRequest(Context ctx, Analysis analysis, Integer year, Integer month, String date) {
         UploadedFile file = ctx.uploadedFile("file");
         if (file == null) {
             ctx.status(400).result("No file uploaded");
@@ -91,37 +95,7 @@ public class SpotifyDataController {
 
         try {
             List<StreamingHistoryEntry> entries = SpotifyDataService.parseCsv(file.content());
-            Object result = null;
-
-            switch (type) {
-                case TOP_SONGS:
-                    List<String> topTrackUris = SpotifyDataService.getTopTracks(entries, 30);
-                    ctx.json(topTrackUris);
-                    return;
-                case TOP_SONGS_BY_YEAR:
-                    if (year == null) {
-                        ctx.status(400).result("Year parameter is required");
-                        return;
-                    }
-                    result = SpotifyDataService.getTopTracks(entries, year, 30);
-                    break;
-                case TOP_SONGS_BY_YEAR_MONTH:
-                    if (year == null || month == null) {
-                        ctx.status(400).result("Year and month parameters are required");
-                        return;
-                    }
-                    result = SpotifyDataService.getTopTracks(entries, year, month, 30);
-                    break;
-                case TOP_ARTISTS:
-                    result = SpotifyDataService.getTopArtists(entries, 30, api);
-                    break;
-                case TOP_ALBUMS:
-                    result = SpotifyDataService.getTopAlbums(entries, 30, api);
-                    break;
-                case PLAYED_SONGS_DATE:
-                    result = SpotifyDataService.getPlayedSongsByDate(entries, date, 30);
-                    break;
-            }
+            Object result = spotifyDataService.analyzeData(entries, analysis, api);
 
             if (result != null) {
                 ctx.json(result);
@@ -134,16 +108,6 @@ public class SpotifyDataController {
             ctx.status(500).result("Error processing file");
         }
     }
-
-    private enum AnalysisType {
-        TOP_SONGS,
-        TOP_SONGS_BY_YEAR,
-        TOP_SONGS_BY_YEAR_MONTH,
-        TOP_ARTISTS,
-        TOP_ALBUMS,
-        PLAYED_SONGS_DATE
-    }
-
 
     private JsonMapper createGsonMapper() {
         Gson gson = new GsonBuilder()
@@ -164,6 +128,7 @@ public class SpotifyDataController {
     }
 
     public static void main(String[] args) {
-        new SpotifyDataController();
+        SpotifyDataService service = new SpotifyDataService();
+        new SpotifyDataController(service);
     }
 }
