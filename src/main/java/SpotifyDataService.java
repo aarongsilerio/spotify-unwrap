@@ -11,7 +11,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -42,11 +41,13 @@ public class SpotifyDataService {
         }
         return entries;
     }
+
+    //updated the summing long part in get methods
     public static List<String> getTopTracks(List<StreamingHistoryEntry> entries, int limit) {
         return entries.stream()
                 .collect(Collectors.groupingBy(
-                        StreamingHistoryEntry::getSpotifyTrackUri,
-                        Collectors.summingLong(StreamingHistoryEntry::getMsPlayed)
+                        StreamingHistoryEntry::spotifyTrackUri,
+                        Collectors.summingLong(StreamingHistoryEntry::minutesPlayed)
                 ))
                 .entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
@@ -57,10 +58,10 @@ public class SpotifyDataService {
 
     public static List<String> getTopTracks(List<StreamingHistoryEntry> entries, int year, int limit) {
         return entries.stream()
-                .filter(entry -> entry.getTs().getYear() == year)
+                .filter(entry -> entry.ts().getYear() == year)
                 .collect(Collectors.groupingBy(
-                        StreamingHistoryEntry::getSpotifyTrackUri,
-                        Collectors.summingLong(StreamingHistoryEntry::getMsPlayed)
+                        StreamingHistoryEntry::spotifyTrackUri,
+                        Collectors.summingLong(StreamingHistoryEntry::minutesPlayed)
                 ))
                 .entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
@@ -71,10 +72,10 @@ public class SpotifyDataService {
 
     public static List<String> getTopTracks(List<StreamingHistoryEntry> entries, int year, int month, int limit) {
         return entries.stream()
-                .filter(entry -> entry.getTs().getYear() == year && entry.getTs().getMonthValue() == month)
+                .filter(entry -> entry.ts().getYear() == year && entry.ts().getMonthValue() == month)
                 .collect(Collectors.groupingBy(
-                        StreamingHistoryEntry::getSpotifyTrackUri,
-                        Collectors.summingLong(StreamingHistoryEntry::getMsPlayed)
+                        StreamingHistoryEntry::spotifyTrackUri,
+                        Collectors.summingLong(StreamingHistoryEntry::minutesPlayed)
                 ))
                 .entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
@@ -86,8 +87,8 @@ public class SpotifyDataService {
     public static List<String> getTopArtists(List<StreamingHistoryEntry> entries, int limit, SpotifyAPIService api) {
         Map<String, Long> artistPlayCounts = entries.stream()
                 .collect(Collectors.groupingBy(
-                        StreamingHistoryEntry::getArtistName,
-                        Collectors.summingLong(StreamingHistoryEntry::getMsPlayed)
+                        StreamingHistoryEntry::artistName,
+                        Collectors.summingLong(StreamingHistoryEntry::minutesPlayed)
                 ));
 
         List<String> topArtists = artistPlayCounts.entrySet().stream()
@@ -104,8 +105,8 @@ public class SpotifyDataService {
     public static List<String> getTopAlbums(List<StreamingHistoryEntry> entries, int limit, SpotifyAPIService api) {
         Map<String, Long> albumPlayCounts = entries.stream()
                 .collect(Collectors.groupingBy(
-                        entry -> entry.getAlbumName() + " - " + entry.getArtistName(),
-                        Collectors.summingLong(StreamingHistoryEntry::getMsPlayed)
+                        entry -> entry.albumName() + " - " + entry.artistName(),
+                        Collectors.summingLong(StreamingHistoryEntry::minutesPlayed)
                 ));
 
         List<Map.Entry<String, Long>> sortedAlbums = albumPlayCounts.entrySet().stream()
@@ -122,21 +123,23 @@ public class SpotifyDataService {
         LocalDate localDate = LocalDate.parse(date, formatter);
 
         return entries.stream()
-                .filter(entry -> entry.getTs().toLocalDate().isEqual(localDate))
-                .map(StreamingHistoryEntry::getSpotifyTrackUri).distinct().collect(Collectors.toList());
+                .filter(entry -> entry.ts().toLocalDate().isEqual(localDate))
+                .map(StreamingHistoryEntry::spotifyTrackUri).distinct().collect(Collectors.toList());
     }
 
-    public long getTotalListeningTime(List<StreamingHistoryEntry> entries) {
+    //updated the map to long part
+    public static long getTotalListeningTime(List<StreamingHistoryEntry> entries) {
         return entries.stream()
-                .mapToLong(StreamingHistoryEntry::getMsPlayed)
+                .mapToLong(StreamingHistoryEntry::minutesPlayed)
                 .sum();
     }
 
-    public Map<DayOfWeek, Long> getMostListenedToDays(List<StreamingHistoryEntry> entries) {
+    //updated the summing long part
+    public static Map<DayOfWeek, Long> getMostListenedToDays(List<StreamingHistoryEntry> entries) {
         return entries.stream()
                 .collect(Collectors.groupingBy(
-                        entry -> entry.getTs().getDayOfWeek(),
-                        Collectors.summingLong(StreamingHistoryEntry::getMsPlayed)
+                        entry -> entry.ts().getDayOfWeek(),
+                        Collectors.summingLong(StreamingHistoryEntry::minutesPlayed)
                 ));
     }
 }
