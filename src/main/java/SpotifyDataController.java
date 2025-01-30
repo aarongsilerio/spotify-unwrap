@@ -38,11 +38,14 @@ public class SpotifyDataController {
 
     private void setupEndpoints() {
         app.post("/analyze/top-songs", this::getTopSongs);
-        app.post("/analyze/top-artists", this::getTopArtists);
-        app.post("/analyze/top-albums", this::getTopAlbums);
         app.post("/analyze/top-songs/year/{year}", this::getTopSongsByYear);
-        app.post("/analyze/top-songs/year/{year}/month/{month}", this::getTopSongsByYearAndMonth);
         app.post("/analyze/top-songs/month/{month}", this::getTopSongsByMonth);
+        app.post("/analyze/top-songs/year/{year}/month/{month}", this::getTopSongsByYearAndMonth);
+        app.post("/analyze/top-artists", this::getTopArtists);
+        app.post("/analyze/top-artists/year/{year}", this::getTopArtistsByYear);
+        app.post("/analyze/top-artists/month/{month}", this::getTopArtistsByMonth);
+        app.post("/analyze/top-artists/year/{year}/month/{month}", this::getTopArtistsByYearAndMonth);
+        app.post("/analyze/top-albums", this::getTopAlbums);
         app.post("/analyze/played-songs/date/{date}", this::getPlayedSongs);
     }
 
@@ -77,6 +80,32 @@ public class SpotifyDataController {
 
     private void getTopArtists(Context ctx) {
         handleAnalysisRequest(ctx, new TopArtistsAnalysis(), null, null, null);
+    }
+
+    private void getTopArtistsByYear(Context ctx) {
+        try {
+            Integer year = Integer.parseInt(ctx.pathParam("year"));
+            handleAnalysisRequest(ctx, new TopArtistsAnalysis(year, null), year, null, null);
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid year format");
+        }
+    }    private void getTopArtistsByMonth(Context ctx) {
+        try {
+            Integer month = Integer.parseInt(ctx.pathParam("month"));
+            handleAnalysisRequest(ctx, new TopArtistsAnalysis(null, month), month, null, null);
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid month format");
+        }
+    }
+
+    private void getTopArtistsByYearAndMonth(Context ctx) {
+        try {
+            Integer year = Integer.parseInt(ctx.pathParam("year"));
+            Integer month = Integer.parseInt(ctx.pathParam("month"));
+            handleAnalysisRequest(ctx, new TopArtistsAnalysis(year, month), year, month, null);
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid year or month format");
+        }
     }
 
     private void getTopAlbums(Context ctx) {
@@ -120,7 +149,6 @@ public class SpotifyDataController {
                 .create();
 
         return new JsonMapper() {
-            @NotNull
             @Override
             public <T> T fromJsonString(@NotNull String json, @NotNull Type targetType) {
                 return gson.fromJson(json, targetType);
