@@ -13,14 +13,9 @@ public class TopSongsAnalysis implements Analysis {
         this.month = null;
     }
 
-    public TopSongsAnalysis(Integer year) {
-        this.year = year;
-        this.month = null;
-    }
-
     public TopSongsAnalysis(Integer year, Integer month) {
-        this.year = year;
-        this.month = month;
+        this.year = (year == null || year == -1) ? null : year;
+        this.month = (month == null || month == -1) ? null : month;
     }
 
     @Override

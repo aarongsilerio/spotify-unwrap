@@ -16,13 +16,10 @@ import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.jetbrains.annotations.NotNull;
 
 public class SpotifyDataController {
-
-    private final SpotifyDataService spotifyDataService;
     private final Javalin app;
     SpotifyAPIService api;
-    public SpotifyDataController(SpotifyDataService spotifyDataService) {
+    public SpotifyDataController() {
         this.api = new SpotifyAPIService("07747c1af7e84fad9f7f388f0af8d068", "c614891da8834905b108304928a4525c");
-        this.spotifyDataService = spotifyDataService;
         this.app = Javalin.create(config -> {
                     config.staticFiles.add(staticFiles -> {
                         staticFiles.directory = "/public";
@@ -45,6 +42,7 @@ public class SpotifyDataController {
         app.post("/analyze/top-albums", this::getTopAlbums);
         app.post("/analyze/top-songs/year/{year}", this::getTopSongsByYear);
         app.post("/analyze/top-songs/year/{year}/month/{month}", this::getTopSongsByYearAndMonth);
+        app.post("/analyze/top-songs/month/{month}", this::getTopSongsByMonth);
         app.post("/analyze/played-songs/date/{date}", this::getPlayedSongs);
     }
 
@@ -54,9 +52,16 @@ public class SpotifyDataController {
     private void getTopSongsByYear(Context ctx) {
         try {
             Integer year = Integer.parseInt(ctx.pathParam("year"));
-            handleAnalysisRequest(ctx, new TopSongsAnalysis(year), year, null, null);
+            handleAnalysisRequest(ctx, new TopSongsAnalysis(year, null), year, null, null);
         } catch (NumberFormatException e) {
             ctx.status(400).result("Invalid year format");
+        }
+    }    private void getTopSongsByMonth(Context ctx) {
+        try {
+            Integer month = Integer.parseInt(ctx.pathParam("month"));
+            handleAnalysisRequest(ctx, new TopSongsAnalysis(null, month), month, null, null);
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid month format");
         }
     }
 
@@ -95,7 +100,7 @@ public class SpotifyDataController {
 
         try {
             List<StreamingHistoryEntry> entries = SpotifyDataService.parseCsv(file.content());
-            Object result = spotifyDataService.analyzeData(entries, analysis, api);
+            Object result = SpotifyDataService.analyzeData(entries, analysis, api);
 
             if (result != null) {
                 ctx.json(result);
@@ -115,6 +120,7 @@ public class SpotifyDataController {
                 .create();
 
         return new JsonMapper() {
+            @NotNull
             @Override
             public <T> T fromJsonString(@NotNull String json, @NotNull Type targetType) {
                 return gson.fromJson(json, targetType);
@@ -128,7 +134,6 @@ public class SpotifyDataController {
     }
 
     public static void main(String[] args) {
-        SpotifyDataService service = new SpotifyDataService();
-        new SpotifyDataController(service);
+        new SpotifyDataController();
     }
 }

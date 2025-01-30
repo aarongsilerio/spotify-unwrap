@@ -37,7 +37,7 @@ public class SpotifyDataService {
         return entries;
     }
 
-    public Object analyzeData(List<StreamingHistoryEntry> entries, Analysis analysis, SpotifyAPIService api) {
+    public static Object analyzeData(List<StreamingHistoryEntry> entries, Analysis analysis, SpotifyAPIService api) {
         return analysis.analyze(entries, api, 30);
     }
 }
