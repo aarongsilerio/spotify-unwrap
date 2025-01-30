@@ -95,7 +95,7 @@ public class SpotifyDataController {
 
             switch (type) {
                 case TOP_SONGS:
-                    List<String> topTrackUris = SpotifyDataService.getTopTracks(entries, 15);
+                    List<String> topTrackUris = SpotifyDataService.getTopTracks(entries, 30);
                     ctx.json(topTrackUris);
                     return;
                 case TOP_SONGS_BY_YEAR:
@@ -103,23 +103,23 @@ public class SpotifyDataController {
                         ctx.status(400).result("Year parameter is required");
                         return;
                     }
-                    result = SpotifyDataService.getTopTracks(entries, year, 15);
+                    result = SpotifyDataService.getTopTracks(entries, year, 30);
                     break;
                 case TOP_SONGS_BY_YEAR_MONTH:
                     if (year == null || month == null) {
                         ctx.status(400).result("Year and month parameters are required");
                         return;
                     }
-                    result = SpotifyDataService.getTopTracks(entries, year, month, 15);
+                    result = SpotifyDataService.getTopTracks(entries, year, month, 30);
                     break;
                 case TOP_ARTISTS:
-                    result = SpotifyDataService.getTopArtists(entries, 15, api);
+                    result = SpotifyDataService.getTopArtists(entries, 30, api);
                     break;
                 case TOP_ALBUMS:
-                    result = SpotifyDataService.getTopAlbums(entries, 15, api);
+                    result = SpotifyDataService.getTopAlbums(entries, 30, api);
                     break;
                 case PLAYED_SONGS_DATE:
-                    result = SpotifyDataService.getPlayedSongsByDate(entries, date, 15);
+                    result = SpotifyDataService.getPlayedSongsByDate(entries, date, 30);
                     break;
             }
 
