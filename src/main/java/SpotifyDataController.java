@@ -46,9 +46,13 @@ public class SpotifyDataController {
         app.post("/analyze/top-artists/month/{month}", this::getTopArtistsByMonth);
         app.post("/analyze/top-artists/year/{year}/month/{month}", this::getTopArtistsByYearAndMonth);
         app.post("/analyze/top-albums", this::getTopAlbums);
+        app.post("/analyze/top-albums/year/{year}", this::getTopAlbumsByYear);
+        app.post("/analyze/top-albums/month/{month}", this::getTopAlbumsByMonth);
+        app.post("/analyze/top-albums/year/{year}/month/{month}", this::getTopAlbumsByYearAndMonth);
         app.post("/analyze/played-songs/date/{date}", this::getPlayedSongs);
     }
 
+    // Top Songs
     private void getTopSongs(Context ctx) {
         handleAnalysisRequest(ctx, new TopSongsAnalysis(), null, null, null);
     }
@@ -78,6 +82,7 @@ public class SpotifyDataController {
         }
     }
 
+    // Top Artists
     private void getTopArtists(Context ctx) {
         handleAnalysisRequest(ctx, new TopArtistsAnalysis(), null, null, null);
     }
@@ -108,8 +113,35 @@ public class SpotifyDataController {
         }
     }
 
+    // Top Albums
     private void getTopAlbums(Context ctx) {
         handleAnalysisRequest(ctx, new TopAlbumsAnalysis(), null, null, null);
+    }
+
+    private void getTopAlbumsByYear(Context ctx) {
+        try {
+            Integer year = Integer.parseInt(ctx.pathParam("year"));
+            handleAnalysisRequest(ctx, new TopAlbumsAnalysis(year, null), year, null, null);
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid year format");
+        }
+    }    private void getTopAlbumsByMonth(Context ctx) {
+        try {
+            Integer month = Integer.parseInt(ctx.pathParam("month"));
+            handleAnalysisRequest(ctx, new TopAlbumsAnalysis(null, month), month, null, null);
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid month format");
+        }
+    }
+
+    private void getTopAlbumsByYearAndMonth(Context ctx) {
+        try {
+            Integer year = Integer.parseInt(ctx.pathParam("year"));
+            Integer month = Integer.parseInt(ctx.pathParam("month"));
+            handleAnalysisRequest(ctx, new TopAlbumsAnalysis(year, month), year, month, null);
+        } catch (NumberFormatException e) {
+            ctx.status(400).result("Invalid year or month format");
+        }
     }
 
     private void getPlayedSongs(Context ctx) {
