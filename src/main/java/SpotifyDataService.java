@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class SpotifyDataService {
-    public List<StreamingHistoryEntry> parseCsv(InputStream inputStream) throws IOException {
+    public static List<StreamingHistoryEntry> parseCsv(InputStream inputStream) throws IOException {
         Reader reader = new InputStreamReader(inputStream);
         CSVParser csvParser = CSVParser.parse(reader, CSVFormat.DEFAULT.builder()
                 .setHeader()
@@ -42,7 +42,7 @@ public class SpotifyDataService {
         }
         return entries;
     }
-    public List<String> getTopTracks(List<StreamingHistoryEntry> entries, int limit) {
+    public static List<String> getTopTracks(List<StreamingHistoryEntry> entries, int limit) {
         return entries.stream()
                 .collect(Collectors.groupingBy(
                         StreamingHistoryEntry::getSpotifyTrackUri,
@@ -55,7 +55,7 @@ public class SpotifyDataService {
                 .collect(Collectors.toList());
     }
 
-    public List<String> getTopTracks(List<StreamingHistoryEntry> entries, int year, int limit) {
+    public static List<String> getTopTracks(List<StreamingHistoryEntry> entries, int year, int limit) {
         return entries.stream()
                 .filter(entry -> entry.getTs().getYear() == year)
                 .collect(Collectors.groupingBy(
@@ -69,7 +69,7 @@ public class SpotifyDataService {
                 .collect(Collectors.toList());
     }
 
-    public List<String> getTopTracks(List<StreamingHistoryEntry> entries, int year, int month, int limit) {
+    public static List<String> getTopTracks(List<StreamingHistoryEntry> entries, int year, int month, int limit) {
         return entries.stream()
                 .filter(entry -> entry.getTs().getYear() == year && entry.getTs().getMonthValue() == month)
                 .collect(Collectors.groupingBy(
@@ -83,7 +83,7 @@ public class SpotifyDataService {
                 .collect(Collectors.toList());
     }
 
-    public List<String> getTopArtists(List<StreamingHistoryEntry> entries, int limit, SpotifyAPIService api) {
+    public static List<String> getTopArtists(List<StreamingHistoryEntry> entries, int limit, SpotifyAPIService api) {
         Map<String, Long> artistPlayCounts = entries.stream()
                 .collect(Collectors.groupingBy(
                         StreamingHistoryEntry::getArtistName,
@@ -101,7 +101,7 @@ public class SpotifyDataService {
         return api.getArtistIds(topArtists);
     }
 
-    public List<String> getTopAlbums(List<StreamingHistoryEntry> entries, int limit, SpotifyAPIService api) {
+    public static List<String> getTopAlbums(List<StreamingHistoryEntry> entries, int limit, SpotifyAPIService api) {
         Map<String, Long> albumPlayCounts = entries.stream()
                 .collect(Collectors.groupingBy(
                         entry -> entry.getAlbumName() + " - " + entry.getArtistName(),
@@ -117,7 +117,7 @@ public class SpotifyDataService {
 
     }
 
-    public List<String> getPlayedSongsByDate(List<StreamingHistoryEntry> entries, String date, int limit) {
+    public static List<String> getPlayedSongsByDate(List<StreamingHistoryEntry> entries, String date, int limit) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDate localDate = LocalDate.parse(date, formatter);
 

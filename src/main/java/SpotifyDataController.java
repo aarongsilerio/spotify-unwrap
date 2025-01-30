@@ -15,13 +15,10 @@ import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.jetbrains.annotations.NotNull;
 
 public class SpotifyDataController {
-
-    private final SpotifyDataService spotifyDataService;
     private final Javalin app;
     SpotifyAPIService api;
-    public SpotifyDataController(SpotifyDataService spotifyDataService) {
+    public SpotifyDataController() {
         this.api = new SpotifyAPIService("07747c1af7e84fad9f7f388f0af8d068", "c614891da8834905b108304928a4525c");
-        this.spotifyDataService = spotifyDataService;
         this.app = Javalin.create(config -> {
                     config.staticFiles.add(staticFiles -> {
                         staticFiles.directory = "/public";
@@ -93,12 +90,12 @@ public class SpotifyDataController {
         }
 
         try {
-            List<StreamingHistoryEntry> entries = spotifyDataService.parseCsv(file.content());
+            List<StreamingHistoryEntry> entries = SpotifyDataService.parseCsv(file.content());
             Object result = null;
 
             switch (type) {
                 case TOP_SONGS:
-                    List<String> topTrackUris = spotifyDataService.getTopTracks(entries, 15);
+                    List<String> topTrackUris = SpotifyDataService.getTopTracks(entries, 15);
                     ctx.json(topTrackUris);
                     return;
                 case TOP_SONGS_BY_YEAR:
@@ -106,23 +103,23 @@ public class SpotifyDataController {
                         ctx.status(400).result("Year parameter is required");
                         return;
                     }
-                    result = spotifyDataService.getTopTracks(entries, year, 15);
+                    result = SpotifyDataService.getTopTracks(entries, year, 15);
                     break;
                 case TOP_SONGS_BY_YEAR_MONTH:
                     if (year == null || month == null) {
                         ctx.status(400).result("Year and month parameters are required");
                         return;
                     }
-                    result = spotifyDataService.getTopTracks(entries, year, month, 15);
+                    result = SpotifyDataService.getTopTracks(entries, year, month, 15);
                     break;
                 case TOP_ARTISTS:
-                    result = spotifyDataService.getTopArtists(entries, 15, api);
+                    result = SpotifyDataService.getTopArtists(entries, 15, api);
                     break;
                 case TOP_ALBUMS:
-                    result = spotifyDataService.getTopAlbums(entries, 15, api);
+                    result = SpotifyDataService.getTopAlbums(entries, 15, api);
                     break;
                 case PLAYED_SONGS_DATE:
-                    result = spotifyDataService.getPlayedSongsByDate(entries, date, 15);
+                    result = SpotifyDataService.getPlayedSongsByDate(entries, date, 15);
                     break;
             }
 
@@ -167,7 +164,6 @@ public class SpotifyDataController {
     }
 
     public static void main(String[] args) {
-        SpotifyDataService service = new SpotifyDataService();
-        new SpotifyDataController(service);
+        new SpotifyDataController();
     }
 }
