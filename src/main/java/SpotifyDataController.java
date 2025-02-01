@@ -4,22 +4,29 @@ import io.javalin.http.UploadedFile;
 import io.javalin.json.JsonMapper;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.TypeAdapter;
 import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.jetbrains.annotations.NotNull;
 
 public class SpotifyDataController {
     private final Javalin app;
     SpotifyAPIService api;
+    private final Map<String, List<StreamingHistoryEntry>> cache;
+
     public SpotifyDataController() {
         this.api = new SpotifyAPIService("07747c1af7e84fad9f7f388f0af8d068", "c614891da8834905b108304928a4525c");
+        this.cache = new ConcurrentHashMap<>();
         this.app = Javalin.create(config -> {
                     config.staticFiles.add(staticFiles -> {
                         staticFiles.directory = "/public";
@@ -160,7 +167,21 @@ public class SpotifyDataController {
         }
 
         try {
-            List<StreamingHistoryEntry> entries = SpotifyDataService.parseCsv(file.content());
+            // Generate a cache key based on file content
+            String cacheKey = getCacheKey(file.content());
+
+            // Check if data is already in cache
+            List<StreamingHistoryEntry> entries = cache.get(cacheKey);
+
+            if (entries == null) {
+                // Data not in cache, parse the CSV and store in cache
+                entries = SpotifyDataService.parseCsv(file.content());
+                cache.put(cacheKey, entries);
+                System.out.println("Data parsed and cached.");
+            } else {
+                System.out.println("Data retrieved from cache.");
+            }
+
             Object result = SpotifyDataService.analyzeData(entries, analysis, api);
 
             if (result != null) {
@@ -191,6 +212,17 @@ public class SpotifyDataController {
                 return gson.toJson(obj, type);
             }
         };
+    }
+
+    private String getCacheKey(InputStream inputStream) throws IOException, NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] buffer = new byte[4096];
+        int bytesRead;
+        while ((bytesRead = inputStream.read(buffer)) != -1) {
+            md.update(buffer, 0, bytesRead);
+        }
+        inputStream.close();
+        return Base64.getEncoder().encodeToString(md.digest());
     }
 
     public static void main(String[] args) {
