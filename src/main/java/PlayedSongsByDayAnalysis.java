@@ -5,13 +5,14 @@ import java.time.format.DateTimeFormatter;
 
 public class PlayedSongsByDayAnalysis implements Analysis {
     private final String date;
+    private final static Integer limit = 25;
 
     public PlayedSongsByDayAnalysis(String date) {
         this.date = date;
     }
 
     @Override
-    public List<String> analyze(List<StreamingHistoryEntry> entries, SpotifyAPIService api, int limit) {
+    public List<String> analyze(List<StreamingHistoryEntry> entries, SpotifyAPIService api) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDate localDate = LocalDate.parse(date, formatter);
 

@@ -7,6 +7,7 @@ import java.util.stream.Stream;
 public class TopArtistsAnalysis implements Analysis {
     private final Integer year;
     private final Integer month;
+    private final static Integer limit = 10;
 
     public TopArtistsAnalysis() {
         this.year = null;
@@ -19,7 +20,7 @@ public class TopArtistsAnalysis implements Analysis {
     }
 
     @Override
-    public List<String> analyze(List<StreamingHistoryEntry> entries, SpotifyAPIService api, int limit) {
+    public List<String> analyze(List<StreamingHistoryEntry> entries, SpotifyAPIService api) {
         Stream<StreamingHistoryEntry> filteredEntries = entries.stream();
 
         if (year != null) {
