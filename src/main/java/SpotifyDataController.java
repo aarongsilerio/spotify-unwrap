@@ -57,6 +57,7 @@ public class SpotifyDataController {
         app.post("/analyze/top-albums/month/{month}", this::getTopAlbumsByMonth);
         app.post("/analyze/top-albums/year/{year}/month/{month}", this::getTopAlbumsByYearAndMonth);
         app.post("/analyze/played-songs/date/{date}", this::getPlayedSongs);
+        app.post("/analyze/explore", this::getExploreStatistics);
     }
 
     // Top Songs
@@ -159,6 +160,11 @@ public class SpotifyDataController {
             ctx.status(400).result("Invalid year format");
         }
     }
+
+    private void getExploreStatistics(Context ctx) {
+        handleAnalysisRequest(ctx, new ExploreStatisticsAnalysis(), null, null, null);
+    }
+
     private void handleAnalysisRequest(Context ctx, Analysis analysis, Integer year, Integer month, String date) {
         UploadedFile file = ctx.uploadedFile("file");
         if (file == null) {
